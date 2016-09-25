@@ -51,7 +51,7 @@ class Line : public Shape
 			dcCleanCopy = CreateCompatibleDC(hDc);
 			bmCleanCopy = CreateCompatibleBitmap(dcCleanCopy, Ox, Oy);
 			SelectObject(dcCleanCopy, bmCleanCopy);
-			PatBlt(dcCleanCopy , 0, 0, Ox, Oy, PATCOPY);
+			PatBlt(dcCleanCopy, 0, 0, Ox, Oy, PATCOPY);
 
 			dcDraftCopy = CreateCompatibleDC(hDc);
 			bmDraftCopy = CreateCompatibleBitmap(dcDraftCopy, Ox, Oy);
@@ -73,20 +73,19 @@ class Line : public Shape
 				ptsEnd = MAKEPOINTS(lParam);
 				StretchBlt(dcCleanCopy, 0, 0, Ox, Oy, dcDraftCopy, 0, 0, Ox, Oy, SRCCOPY);
 				DrawLine(dcCleanCopy, ptsBegin.x, ptsBegin.y, ptsEnd.x, ptsEnd.y);
-				StretchBlt(hDc, 0, 0, Ox, Oy, dcCleanCopy, 0, 0, Ox, Oy, SRCCOPY);
+				WmPaint();
 			}
 		}
 		void MouseUp()
 		{
 			StretchBlt(dcCleanCopy, 0, 0, Ox, Oy, dcDraftCopy, 0, 0, Ox, Oy, SRCCOPY);
 			DrawLine(dcCleanCopy, ptsBegin.x, ptsBegin.y, ptsEnd.x, ptsEnd.y);
-			StretchBlt(dcDraftCopy, 0, 0, Ox, Oy, dcCleanCopy, 0, 0, Ox, Oy, SRCCOPY);
 			WmPaint();
 		}
 		void WmPaint()
 		{
 			hDc = BeginPaint(hWnd, &ps);
-			StretchBlt(hDc, 0, 0, Ox, Oy, dcDraftCopy, 0, 0, Ox, Oy, SRCCOPY);
+			StretchBlt(hDc, 0, 0, Ox, Oy, dcCleanCopy, 0, 0, Ox, Oy, SRCCOPY);
 			EndPaint(hWnd, &ps);
 		}
 		void Draw()
