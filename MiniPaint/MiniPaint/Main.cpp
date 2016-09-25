@@ -80,12 +80,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	currentShape->lParam = lParam;
 	currentShape->wParam = wParam;
 	currentShape->hWnd = hWnd;
-	currentShape->WndProc();
 
 	switch (uMsg)
 	{
 	case WM_CREATE:
 	{
+		currentShape->WndProc();
 		break;
 	}
 	case WM_PAINT:

@@ -81,6 +81,7 @@ class Line : public Shape
 			StretchBlt(dcCleanCopy, 0, 0, Ox, Oy, dcDraftCopy, 0, 0, Ox, Oy, SRCCOPY);
 			DrawLine(dcCleanCopy, ptsBegin.x, ptsBegin.y, ptsEnd.x, ptsEnd.y);
 			StretchBlt(dcDraftCopy, 0, 0, Ox, Oy, dcCleanCopy, 0, 0, Ox, Oy, SRCCOPY);
+			WmPaint();
 		}
 		void WmPaint()
 		{
