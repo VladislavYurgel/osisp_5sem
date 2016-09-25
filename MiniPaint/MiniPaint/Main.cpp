@@ -118,12 +118,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			{
 				currentShape = new Line();
 				currentShape->hWnd = hWnd;
+				currentShape->WndProc();
 				break;
 			}
 			case ID_SHAPES_DRAW:
 			{
 				currentShape = new Pencil();
 				currentShape->hWnd = hWnd;
+				currentShape->WndProc();
 				break;
 			}
 			case ID_HELP_ABOUT:
@@ -171,9 +173,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		return 0;
 		break;
 	}
+	default:
+		return DefWindowProc(hWnd, uMsg, wParam, lParam);
 	}
 
-	return DefWindowProc(hWnd, uMsg, wParam, lParam);
+	return NULL;
 }
 
 // About program dialog handler
