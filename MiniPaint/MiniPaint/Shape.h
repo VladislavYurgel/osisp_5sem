@@ -73,20 +73,21 @@ class Line : public Shape
 				ptsEnd = MAKEPOINTS(lParam);
 				StretchBlt(dcCleanCopy, 0, 0, Ox, Oy, dcDraftCopy, 0, 0, Ox, Oy, SRCCOPY);
 				DrawLine(dcCleanCopy, ptsBegin.x, ptsBegin.y, ptsEnd.x, ptsEnd.y);
-				WmPaint();
 			}
 		}
 		void MouseUp()
 		{
 			StretchBlt(dcCleanCopy, 0, 0, Ox, Oy, dcDraftCopy, 0, 0, Ox, Oy, SRCCOPY);
 			DrawLine(dcCleanCopy, ptsBegin.x, ptsBegin.y, ptsEnd.x, ptsEnd.y);
-			WmPaint();
+			StretchBlt(dcDraftCopy, 0, 0, Ox, Oy, dcCleanCopy, 0, 0, Ox, Oy, SRCCOPY);
 		}
 		void WmPaint()
 		{
-			hDc = BeginPaint(hWnd, &ps);
+			//hDc = BeginPaint(hWnd, &ps);
+			hDc = GetDC(hWnd);
 			StretchBlt(hDc, 0, 0, Ox, Oy, dcCleanCopy, 0, 0, Ox, Oy, SRCCOPY);
-			EndPaint(hWnd, &ps);
+			ReleaseDC(hWnd, hDc);
+			//EndPaint(hWnd, &ps);
 		}
 		void Draw()
 		{
