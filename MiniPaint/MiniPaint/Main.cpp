@@ -13,7 +13,8 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
 static bool isDrawing = false;
 BOOL DrawLine(HDC, int, int, int, int);
-Shape *currentShape = new Line();
+Shape *currentShape = new Pencil();
+BOOL palFlag = FALSE;
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
@@ -76,12 +77,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	static PAINTSTRUCT ps;
-	static RECT rect;
-	static HPEN hPen;
-	static HDC hDc;
-	static POINT point;
-	static POINT prevMousePoint;
+	currentShape->lParam = lParam;
+	currentShape->wParam = wParam;
+	currentShape->hWnd = hWnd;
+	currentShape->WndProc();
 
 	switch (uMsg)
 	{
@@ -91,40 +90,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 	case WM_PAINT:
 	{
-		if (isDrawing)
-		{
-			hDc = BeginPaint(hWnd, &ps);
-			currentShape->hDc = hDc;
-			currentShape->Draw();
-			EndPaint(hWnd, &ps);
-		}
+		currentShape->WmPaint();
 		break;
 	}
 	case WM_LBUTTONDOWN:
 	{
-		isDrawing = true;
+		currentShape->isDrawing = TRUE;
 		currentShape->MouseDown();
 		break;
 	}
 	case WM_MOUSEMOVE:
 	{
-		prevMousePoint = point;
-		GetCursorPos(&point);
-		ScreenToClient(hWnd, &point);
-
-		currentShape->pointFirst = prevMousePoint;
-		currentShape->pointSecond = point;
-
-		if (isDrawing)
-		{
-			GetClientRect(hWnd, &rect);
-			InvalidateRect(hWnd, &rect, FALSE);
-		}
+		currentShape->MouseMove();
 		break;
 	}
 	case WM_LBUTTONUP:
 	{
-		isDrawing = false;
+		currentShape->isDrawing = FALSE;
+		currentShape->MouseUp();
 		break;
 	}
 	case WM_COMMAND:
@@ -153,6 +136,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				DestroyWindow(hWnd);
 				break;
 			}
+		}
+		break;
+	}
+	case WM_MOUSEWHEEL:
+	{
+		if (LOWORD(wParam) == MK_CONTROL)
+		{
+			if ((short)HIWORD(wParam) > 0)
+				MessageBox(hWnd, L"Mouse wheel+ with CTRL", L"Mouse wheel", NULL);
+			else
+				MessageBox(hWnd, L"Mouse wheel- with CTRL", L"Mouse wheel", NULL);
 		}
 		break;
 	}
