@@ -114,30 +114,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		switch (LOWORD(wParam))
 		{
-			case ID_SHAPES_LINE:
-			{
-				currentShape = new Line();
-				currentShape->hWnd = hWnd;
-				currentShape->WndProc();
-				break;
-			}
-			case ID_SHAPES_DRAW:
-			{
-				currentShape = new Pencil();
-				currentShape->hWnd = hWnd;
-				currentShape->WndProc();
-				break;
-			}
-			case ID_HELP_ABOUT:
-			{
-				DialogBox(hCurrentInstance, MAKEINTRESOURCE(IDD_DIALOGABOUT), hWnd, About);
-				break;
-			}
-			case ID_FILE_QUIT:
-			{
-				DestroyWindow(hWnd);
-				break;
-			}
+		case ID_SHAPES_LINE:
+		{
+			currentShape = new Line();
+			currentShape->hWnd = hWnd;
+			currentShape->WndProc();
+			break;
+		}
+		case ID_SHAPES_DRAW:
+		{
+			currentShape = new Pencil();
+			currentShape->hWnd = hWnd;
+			currentShape->WndProc();
+			break;
+		}
+		case ID_HELP_ABOUT:
+		{
+			DialogBox(hCurrentInstance, MAKEINTRESOURCE(IDD_DIALOGABOUT), hWnd, About);
+			break;
+		}
+		case ID_FILE_QUIT:
+		{
+			DestroyWindow(hWnd);
+			break;
+		}
 		}
 		break;
 	}
@@ -156,14 +156,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		switch (wParam)
 		{
-			case 'X':
-			{
-				if (GetAsyncKeyState(VK_CONTROL)) {
-					DestroyWindow(hWnd);
-					break;
-				}
+		case 'X':
+		{
+			if (GetAsyncKeyState(VK_CONTROL)) {
+				DestroyWindow(hWnd);
 				break;
 			}
+			break;
+		}
 		}
 		break;
 	}
@@ -179,6 +179,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	return NULL;
 }
+
 
 // About program dialog handler
 
