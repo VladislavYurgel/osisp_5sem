@@ -8,11 +8,20 @@
 class Painter
 {
 public:
-	DWORD CurrentColor;
-	DWORD FillColor;
+	/* Data for capture area for print */
+	
+	
+
+	DWORD CurrentColor = RGB(0, 0, 0);
+	DWORD FillColor = RGB(255, 255, 255);
+	int PenSize = 1;
 
 	Painter();
 	~Painter();
+
+	/* PEN SIZE */
+
+	void SetPenSize(int newSize);
 
 	/* SCROLLBARS */
 
@@ -26,6 +35,10 @@ public:
 	void SetPenColor(DWORD);
 	void SetFillColor(DWORD);
 	DWORD GetPenColor();
+
+	/* PRINT SELECTED AREA */
+
+	void PrintArea(HDC hdc, HDC memDC, POINTS ptsBegin, POINTS *ptsEnd, double zoom, bool fPrevLine, LPARAM lParam);
 
 	/* INSTRUMENTS */
 	

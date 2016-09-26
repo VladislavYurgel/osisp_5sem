@@ -91,6 +91,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	static int k = 0;
 	static HDC memDC;
 	static HBITMAP memBM;
+	static HPEN hPen;
 
 	switch (uMsg)
 	{
@@ -115,6 +116,36 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			switch (LOWORD(wParam))
 			{
+				case ID_FILE_PRINT:
+				{
+					currentId = ID_FILE_PRINT;
+
+					break;
+				}
+
+				case ID_SIZE_VERYSMALL:
+				{
+					painter.SetPenSize(1);
+					break;
+				}
+				case ID_SIZE_SMALL:
+				{
+					painter.SetPenSize(3);
+					break;
+				}
+				case ID_SIZE_LARGE:
+				{
+					painter.SetPenSize(6);
+					break;
+				}
+				case ID_SIZE_VERYLARGE:
+				{
+					painter.SetPenSize(9);
+					break;
+				}
+
+				/* Choose color for figure fill */
+
 				case ID_COLOR_FILL:
 				{
 					CHOOSECOLOR cc;
@@ -164,8 +195,89 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					break;
 				}
 
+				case ID_FILE_SAVE:
+				{
+					hdc = GetDC(hwnd);
+
+					RECT rect;
+					GetClientRect(hwnd, &rect);
+
+					/* Get meta data about current descriptor */
+
+					int iWidthMM = GetDeviceCaps(hdc, HORZSIZE);
+					int iHeightMM = GetDeviceCaps(hdc, VERTSIZE);
+					int iWidthPels = GetDeviceCaps(hdc, HORZRES);
+					int iHeightPels = GetDeviceCaps(hdc, VERTRES);
+					rect.left = (rect.left * iWidthMM * 100) / iWidthPels;
+					rect.top = (rect.top * iHeightMM * 100) / iHeightPels;
+					rect.right = (rect.right * iWidthMM * 100) / iWidthPels;
+					rect.bottom = (rect.bottom * iHeightMM * 100) / iHeightPels;
+
+					/* Create dialog for save file */
+
+					OPENFILENAME openFileName;
+					char szFileName[MAX_PATH] = "";
+					ZeroMemory(&openFileName, sizeof(openFileName));
+
+					openFileName.lStructSize = sizeof(openFileName);
+					openFileName.hwndOwner = NULL;
+					openFileName.lpstrFilter = (LPCWSTR)L"EMF files (*.emf)\0*.emf";
+					openFileName.lpstrFile = (LPWSTR)szFileName;
+					openFileName.nMaxFile = MAX_PATH;
+					openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+					openFileName.lpstrDefExt = (LPCWSTR)L"emf";
+
+					GetSaveFileName(&openFileName);
+
+					/* Close dialog for save file */
+
+					HDC hdcMeta = CreateEnhMetaFile(hdc, openFileName.lpstrFile, &rect, L"iPaint EMF file\0");
+
+					/* If file has been not created or saved */
+
+					if (!hdcMeta)
+						MessageBox(NULL, L"CreateEnhMetaFile!", L"Error", MB_ICONERROR);
+
+
+					StretchBlt(hdcMeta, 0, 0, GetDeviceCaps(hdc, HORZRES),
+						GetDeviceCaps(hdc, VERTRES), memDC, 0, 0,
+						GetDeviceCaps(memDC, HORZRES), GetDeviceCaps(memDC, VERTRES), SRCCOPY);
+
+					SetMapMode(hdcMeta, MM_ANISOTROPIC);
+					ReleaseDC(hwnd, hdc);
+					HENHMETAFILE meta = CloseEnhMetaFile(hdcMeta);
+
+					break;
+				}
+
 				case ID_FILE_OPEN:
 				{
+					hdc = GetDC(hwnd);
+
+					OPENFILENAME openFileName;
+					char szFileName[MAX_PATH] = "";
+					ZeroMemory(&openFileName, sizeof(openFileName));
+					openFileName.lStructSize = sizeof(openFileName);
+					openFileName.hwndOwner = NULL;
+					openFileName.lpstrFilter = (LPCWSTR)L"EMF files (*.emf)\0*.emf";
+					openFileName.lpstrFile = (LPWSTR)szFileName;
+					openFileName.nMaxFile = MAX_PATH;
+					openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+					openFileName.lpstrDefExt = (LPCWSTR)L"emf";
+
+					if (GetOpenFileName(&openFileName) == TRUE)
+					{
+						HENHMETAFILE henHMetaFile = GetEnhMetaFile(openFileName.lpstrFile);
+						RECT rect;
+						GetClientRect(hwnd, &rect);
+						PlayEnhMetaFile(hdc, henHMetaFile, &rect);
+
+						StretchBlt(memDC, 0, 0, GetDeviceCaps(hdc, HORZRES),
+							GetDeviceCaps(hdc, VERTRES), memDC, 0, 0,
+							GetDeviceCaps(memDC, HORZRES), GetDeviceCaps(memDC, VERTRES), SRCCOPY);
+
+						DeleteEnhMetaFile(henHMetaFile);
+					}
 
 					break;
 				}
@@ -183,7 +295,26 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					rect.top = (rect.top * iHeightMM * 100) / iHeightPels;
 					rect.right = (rect.right * iWidthMM * 100) / iWidthPels;
 					rect.bottom = (rect.bottom * iHeightMM * 100) / iHeightPels;
-					HDC hdcMeta = CreateEnhMetaFile(hdc, L"D:\\testEMF.emf", &rect, L"Example metafile\0");
+
+					/* Create dialog for save file */
+
+					OPENFILENAME openFileName;
+					char szFileName[MAX_PATH] = "";
+					ZeroMemory(&openFileName, sizeof(openFileName));
+
+					openFileName.lStructSize = sizeof(openFileName);
+					openFileName.hwndOwner = NULL;
+					openFileName.lpstrFilter = (LPCWSTR)L"EMF files (*.emf)\0*.emf";
+					openFileName.lpstrFile = (LPWSTR)szFileName;
+					openFileName.nMaxFile = MAX_PATH;
+					openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+					openFileName.lpstrDefExt = (LPCWSTR)L"emf";
+
+					GetSaveFileName(&openFileName);
+
+					/* Close dialog for save file */
+
+					HDC hdcMeta = CreateEnhMetaFile(hdc, openFileName.lpstrFile, &rect, L"iPaint EMF file\0");
 					if (!hdcMeta)
 					{
 						MessageBox(NULL, L"CreateEnhMetaFile!", L"Error", MB_ICONERROR);
@@ -287,6 +418,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			switch (currentId)
 			{
+				case ID_FILE_PRINT:
+				{
+					if (wParam & MK_LBUTTON)
+					{
+						hdc = GetDC(hwnd);
+						ptsEnd = MAKEPOINTS(lParam);
+
+						painter.PrintArea(hdc, memDC, ptsBegin, &ptsEnd, zoom, fPrevLine, lParam);
+					}
+
+					break;
+				}
 				case ID_INSTRUMENT_PENCIL:
 				{
 					if (wParam & MK_LBUTTON)
@@ -294,7 +437,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						hdc = GetDC(hwnd);
 						ptsEnd = MAKEPOINTS(lParam);
 						
-						SelectObject(hdc, GetStockObject(DC_PEN));
+						hPen = CreatePen(PS_SOLID, painter.PenSize, painter.CurrentColor);
+						SelectObject(hdc, hPen);
 						SetDCPenColor(hdc, painter.CurrentColor);
 						
 						SelectObject(hdc, GetStockObject(DC_BRUSH));
@@ -313,7 +457,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					{
 						hdc = GetDC(hwnd);
 						
-						SelectObject(hdc, GetStockObject(DC_PEN));
+						hPen = CreatePen(PS_SOLID, painter.PenSize, painter.CurrentColor);
+						SelectObject(hdc, hPen);
 						SetDCPenColor(hdc, painter.CurrentColor);
 						
 						SelectObject(hdc, GetStockObject(DC_BRUSH));
@@ -331,7 +476,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					{
 						hdc = GetDC(hwnd);
 						
-						SelectObject(hdc, GetStockObject(DC_PEN));
+						hPen = CreatePen(PS_SOLID, painter.PenSize, painter.CurrentColor);
+						SelectObject(hdc, hPen);
 						SetDCPenColor(hdc, painter.CurrentColor);
 						
 						SelectObject(hdc, GetStockObject(DC_BRUSH));
@@ -349,7 +495,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					{
 						hdc = GetDC(hwnd);
 						
-						SelectObject(hdc, GetStockObject(DC_PEN));
+						hPen = CreatePen(PS_SOLID, painter.PenSize, painter.CurrentColor);
+						SelectObject(hdc, hPen);
 						SetDCPenColor(hdc, painter.CurrentColor);
 						
 						SelectObject(hdc, GetStockObject(DC_BRUSH));
@@ -367,7 +514,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					{
 						hdc = GetDC(hwnd);
 						
-						SelectObject(hdc, GetStockObject(DC_PEN));
+						hPen = CreatePen(PS_SOLID, painter.PenSize, painter.CurrentColor);
+						SelectObject(hdc, hPen);
 						SetDCPenColor(hdc, painter.CurrentColor);
 						
 						SelectObject(hdc, GetStockObject(DC_BRUSH));
@@ -386,7 +534,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					{
 						hdc = GetDC(hwnd); 
 						
-						SelectObject(hdc, GetStockObject(DC_PEN));
+						hPen = CreatePen(PS_SOLID, painter.PenSize, painter.CurrentColor);
+						SelectObject(hdc, hPen);
 						SetDCPenColor(hdc, painter.FillColor);
 						
 						SelectObject(hdc, GetStockObject(DC_BRUSH));
@@ -406,10 +555,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			hdc = GetDC(hwnd);
 			
-			SelectObject(memDC, GetStockObject(DC_PEN));
+			hPen = CreatePen(PS_SOLID, painter.PenSize, painter.CurrentColor);
+			SelectObject(memDC, hPen);
 			SetDCPenColor(memDC, painter.CurrentColor);
 			
-			SelectObject(hdc, GetStockObject(DC_PEN));
+			hPen = CreatePen(PS_SOLID, painter.PenSize, painter.CurrentColor);
+			SelectObject(hdc, hPen);
 			SetDCPenColor(hdc, painter.CurrentColor);
 			
 			SelectObject(hdc, GetStockObject(DC_BRUSH));
