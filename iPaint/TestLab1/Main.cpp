@@ -3,6 +3,11 @@
 #include "Painter.h"
 #include "resource.h"
 
+#define COORDINATE_X 0
+#define COORDINATE_Y 0
+#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080
+
 #define SelectPen(hdc, hpen) \
   ((HPEN)SelectObject((hdc), (HGDIOBJ)(HPEN)(hpen)))
 
@@ -15,9 +20,12 @@ Painter painter;
 POINTS startPointPoly;
 char text[2] = { ' ', '\0' };
 
+HWND hWindow;
+WNDCLASSEX wClass;
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
 {
-	WNDCLASSEX wClass;
+	wClass;
 	ZeroMemory(&wClass, sizeof(WNDCLASSEX));
 
 	wClass.cbSize = sizeof(WNDCLASSEX);
@@ -36,18 +44,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		MessageBox(NULL, L"The window class has not been created!", L"Exit", MB_ICONERROR);
 	}
 
-	HWND hWindow = CreateWindowEx(NULL,
+	hWindow = CreateWindowEx(NULL,
 		L"iPaint", 
 		L"iPaint", 
-		WS_OVERLAPPEDWINDOW,
-		300, 
-		200, 
-		640, 
-		480, 
+		WS_OVERLAPPEDWINDOW | WS_HSCROLL | WS_VSCROLL,
+		CW_USEDEFAULT, 
+		CW_USEDEFAULT, 
+		CW_USEDEFAULT, 
+		CW_USEDEFAULT, 
 		NULL,
 		NULL,
 		hInstance, 
 		NULL);
+
+	painter.HideScrollBars(hWindow);
 
 	if (!hWindow)
 	{
@@ -55,7 +65,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		MessageBox(NULL, L"The window has not benn created!", L"Error", MB_ICONERROR);
 	}
 
-	ShowWindow(hWindow, nShowCmd);
+	//ShowWindow(hWindow, nShowCmd);
+	ShowWindow(hWindow, SW_MAXIMIZE);
 	UpdateWindow(hWindow);
 
 	MSG msg;
@@ -104,6 +115,55 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			switch (LOWORD(wParam))
 			{
+				case ID_COLOR_FILL:
+				{
+					CHOOSECOLOR cc;
+					static COLORREF acrCustClr[16];
+					HBRUSH hbrush;
+					static DWORD rgbCurrent;
+
+					ZeroMemory(&cc, sizeof(CHOOSECOLOR));
+					
+					cc.lStructSize = sizeof(CHOOSECOLOR);
+					cc.hwndOwner = hwnd;
+					cc.lpCustColors = (LPDWORD)acrCustClr;
+					cc.rgbResult = rgbCurrent;
+					cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+					
+					if (ChooseColor(&cc) == TRUE) 
+					{
+						hbrush = CreateSolidBrush(cc.rgbResult);
+						rgbCurrent = cc.rgbResult;
+						painter.SetFillColor(rgbCurrent);
+					}
+
+					break;
+				}
+				
+				case ID_COLOR_BORDER:
+				{
+					CHOOSECOLOR cc;
+					static COLORREF acrCustClr[16];
+					HBRUSH hbrush;
+					static DWORD rgbCurrent;
+
+					ZeroMemory(&cc, sizeof(CHOOSECOLOR));
+
+					cc.lStructSize = sizeof(CHOOSECOLOR);
+					cc.hwndOwner = hwnd;
+					cc.lpCustColors = (LPDWORD)acrCustClr;
+					cc.rgbResult = rgbCurrent;
+					cc.Flags = CC_FULLOPEN | CC_RGBINIT;
+
+					if (ChooseColor(&cc) == TRUE)
+					{
+						hbrush = CreateSolidBrush(cc.rgbResult);
+						rgbCurrent = cc.rgbResult;
+						painter.SetPenColor(rgbCurrent);
+					}
+					break;
+				}
+
 				case ID_FILE_OPEN:
 				{
 
@@ -233,6 +293,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					{
 						hdc = GetDC(hwnd);
 						ptsEnd = MAKEPOINTS(lParam);
+						
+						SelectObject(hdc, GetStockObject(DC_PEN));
+						SetDCPenColor(hdc, painter.CurrentColor);
+						
+						SelectObject(hdc, GetStockObject(DC_BRUSH));
+						SetDCBrushColor(hdc, painter.FillColor);
+
 						painter.drawPencil(hdc, memDC, ptsBegin, ptsEnd, zoom);
 						fPrevLine = TRUE;
 						ptsBegin = ptsEnd;
@@ -245,6 +312,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (wParam & MK_LBUTTON)
 					{
 						hdc = GetDC(hwnd);
+						
+						SelectObject(hdc, GetStockObject(DC_PEN));
+						SetDCPenColor(hdc, painter.CurrentColor);
+						
+						SelectObject(hdc, GetStockObject(DC_BRUSH));
+						SetDCBrushColor(hdc, painter.FillColor);
+
 						painter.drawLine(hdc, memDC, ptsBegin, &ptsEnd, zoom, fPrevLine, lParam);
 						fPrevLine = TRUE;
 						ReleaseDC(hwnd, hdc);
@@ -256,6 +330,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (wParam & MK_LBUTTON)
 					{
 						hdc = GetDC(hwnd);
+						
+						SelectObject(hdc, GetStockObject(DC_PEN));
+						SetDCPenColor(hdc, painter.CurrentColor);
+						
+						SelectObject(hdc, GetStockObject(DC_BRUSH));
+						SetDCBrushColor(hdc, painter.FillColor);
+
 						painter.drawRectangle(hdc, memDC, ptsBegin, &ptsEnd, zoom, fPrevLine, lParam);
 						fPrevLine = TRUE;
 						ReleaseDC(hwnd, hdc);
@@ -267,6 +348,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (wParam & MK_LBUTTON)
 					{
 						hdc = GetDC(hwnd);
+						
+						SelectObject(hdc, GetStockObject(DC_PEN));
+						SetDCPenColor(hdc, painter.CurrentColor);
+						
+						SelectObject(hdc, GetStockObject(DC_BRUSH));
+						SetDCBrushColor(hdc, painter.FillColor);
+
 						painter.drawEllipse(hdc, memDC, ptsBegin, &ptsEnd, zoom, fPrevLine, lParam);
 						fPrevLine = TRUE;
 						ReleaseDC(hwnd, hdc);
@@ -278,6 +366,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (flag)
 					{
 						hdc = GetDC(hwnd);
+						
+						SelectObject(hdc, GetStockObject(DC_PEN));
+						SetDCPenColor(hdc, painter.CurrentColor);
+						
+						SelectObject(hdc, GetStockObject(DC_BRUSH));
+						SetDCBrushColor(hdc, painter.FillColor);
+
 						painter.drawCurve(hdc, memDC, ptsBegin, &ptsEnd, zoom, fPrevLine, lParam);
 						fPrevLine = TRUE;
 						ReleaseDC(hwnd, hdc);
@@ -290,6 +385,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (flagPoly)
 					{
 						hdc = GetDC(hwnd); 
+						
+						SelectObject(hdc, GetStockObject(DC_PEN));
+						SetDCPenColor(hdc, painter.FillColor);
+						
+						SelectObject(hdc, GetStockObject(DC_BRUSH));
+						SetDCBrushColor(hdc, painter.FillColor);
+
 						painter.drawPoly(hdc, memDC, ptsBegin, &ptsEnd, startPointPoly, zoom, fPrevLine, lParam);
 						fPrevLine = TRUE;
 						ReleaseDC(hwnd, hdc);
@@ -303,6 +405,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_LBUTTONUP:
 		{
 			hdc = GetDC(hwnd);
+			
+			SelectObject(memDC, GetStockObject(DC_PEN));
+			SetDCPenColor(memDC, painter.CurrentColor);
+			
+			SelectObject(hdc, GetStockObject(DC_PEN));
+			SetDCPenColor(hdc, painter.CurrentColor);
+			
+			SelectObject(hdc, GetStockObject(DC_BRUSH));
+			SetDCBrushColor(hdc, painter.FillColor);
+
+			SelectObject(memDC, GetStockObject(DC_BRUSH));
+			SetDCBrushColor(memDC, painter.FillColor);
 
 			if (currentId < ID_INSTRUMENT_RECTANGLE && currentId != 0)
 			{
@@ -312,13 +426,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 			else if (currentId == ID_INSTRUMENT_RECTANGLE)
 			{
-				SelectObject(memDC, GetStockObject(NULL_BRUSH));
+				//SelectObject(memDC, GetStockObject(NULL_BRUSH));
 				ptsEnd = MAKEPOINTS(lParam);
 				Rectangle(memDC, ptsBegin.x/zoom, ptsBegin.y / zoom, ptsEnd.x / zoom, ptsEnd.y / zoom);
 			}
 			else if (currentId == ID_INSTRUMENT_ELLIPSE)
 			{
-				SelectObject(memDC, GetStockObject(NULL_BRUSH));
+				//SelectObject(memDC, GetStockObject(NULL_BRUSH));
 				ptsEnd = MAKEPOINTS(lParam);
 				Ellipse(memDC, ptsBegin.x / zoom, ptsBegin.y / zoom, ptsEnd.x / zoom, ptsEnd.y / zoom);
 			}
@@ -355,6 +469,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_PAINT:
 		{
 			hdc = GetDC(hwnd);
+			
 			if (currentId == ID_INSTRUMENT_TEXT)
 			{
 				TextOut(memDC, ptsBegin.x, ptsBegin.y, (LPCWSTR)text, sizeof(text));
@@ -373,12 +488,27 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			{
 				if (((short)HIWORD(wParam)) < 0)
 				{
-					zoom -= 0.05;
+					zoom = (zoom - ZOOM_RATE) > ZOOM_MIN_RATE ? zoom - ZOOM_RATE : zoom;
+					if ((zoom > (1 - ZOOM_RATE)) && (zoom < (1 + ZOOM_RATE)))
+						painter.HideScrollBars(hwnd);
+					else
+					{
+						painter.ScrollBarSetParams(hwnd, zoom);
+						painter.ShowScrollBars(hwnd);
+					}
 					SendMessage(hwnd, WM_PAINT, 0, 0);
 				}
 				else
 				{
-					zoom += 0.05;
+					zoom = (zoom - ZOOM_RATE) < ZOOM_MAX_RATE ? zoom + ZOOM_RATE : zoom;
+					if ((zoom > (1 - ZOOM_RATE)) && (zoom < (1 + ZOOM_RATE)))
+						painter.HideScrollBars(hwnd);
+					else
+					{
+						painter.ShowScrollBars(hwnd);
+						painter.ScrollBarSetParams(hwnd, zoom);
+					}
+
 					SendMessage(hwnd, WM_PAINT, 0, 0);
 				}
 			}
@@ -392,6 +522,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				text[0] = (char)wParam;
 				SendMessage(hwnd, WM_PAINT, 0, 0);
 			}
+			break;
+		}
+
+		case WM_VSCROLL:
+		{
+
 			break;
 		}
 	}
