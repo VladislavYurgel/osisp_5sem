@@ -10,7 +10,7 @@ class Painter
 public:
 	/* Data for capture area for print */
 	
-	
+	HDC dcMemory;
 
 	DWORD CurrentColor = RGB(0, 0, 0);
 	DWORD FillColor = RGB(255, 255, 255);

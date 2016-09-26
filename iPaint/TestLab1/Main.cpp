@@ -136,9 +136,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					currentId = ID_FILE_PRINT;
 
 					if (!PrintedArea)
-						break;
-					else
+					{
+						hdc = GetDC(hwnd);
+						painter.dcMemory = hdc;
 						PrintedArea = TRUE;
+						break;
+					}
 
 					OPENFILENAME openFileName;
 					char szFileName[MAX_PATH] = "";
@@ -155,9 +158,31 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (GetSaveFileName(&openFileName) == TRUE)
 					{
 						hdc = GetDC(hwnd);
-
 						RECT rect;
 						GetClientRect(hwnd, &rect);
+						int iWidthMM = GetDeviceCaps(hdc, HORZSIZE);
+						int iHeightMM = GetDeviceCaps(hdc, VERTSIZE);
+						int iWidthPels = GetDeviceCaps(hdc, HORZRES);
+						int iHeightPels = GetDeviceCaps(hdc, VERTRES);
+						rect.left = (0 * iWidthMM * 100) / iWidthPels;
+						rect.top = (0 * iHeightMM * 100) / iHeightPels;
+						rect.right = (abs(ptsEnd.x - ptsBegin.x) * iWidthMM * 100) / iWidthPels;
+						rect.bottom = (abs(ptsEnd.y - ptsBegin.y) * iHeightMM * 100) / iHeightPels;
+
+						HDC hdcMeta = CreateEnhMetaFile(hdc, openFileName.lpstrFile, &rect, L"EMF metafile\0");
+
+						StretchBlt(hdcMeta, 0, 0, abs(ptsEnd.x - ptsBegin.x),
+							abs(ptsEnd.y - ptsBegin.y), memDC, ptsBegin.x, ptsBegin.y,
+							abs(ptsEnd.x - ptsBegin.x), abs(ptsEnd.y - ptsBegin.y), SRCCOPY);
+
+						SetMapMode(hdcMeta, MM_ANISOTROPIC);
+						ReleaseDC(hwnd, hdc);
+						HENHMETAFILE meta = CloseEnhMetaFile(hdcMeta);
+						DeleteEnhMetaFile(meta);
+
+						ReleaseDC(hwnd, painter.dcMemory);
+						currentId = 0;
+						PrintedArea = FALSE;
 					}
 
 					break;
