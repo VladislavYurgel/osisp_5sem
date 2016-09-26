@@ -35,4 +35,9 @@
       <Filter>Файлы ресурсов</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="logo.png">
+      <Filter>Файлы ресурсов</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

@@ -11,6 +11,12 @@
 #define SelectPen(hdc, hpen) \
   ((HPEN)SelectObject((hdc), (HGDIOBJ)(HPEN)(hpen)))
 
+HINSTANCE hCurrentInstance;
+
+INT_PTR CALLBACK About(HWND, UINT, WPARAM, LPARAM);
+
+bool PrintedArea;
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 int currentId = 0;
 bool flag = FALSE, flagPoly = FALSE, firstLine = TRUE;
@@ -19,6 +25,8 @@ double zoom = 1;
 Painter painter;
 POINTS startPointPoly;
 char text[2] = { ' ', '\0' };
+void SaveFileDialog(HDC, HDC, HWND);
+void OpenFileDialog(HDC, HDC, HWND);
 
 HWND hWindow;
 WNDCLASSEX wClass;
@@ -27,6 +35,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 	wClass;
 	ZeroMemory(&wClass, sizeof(WNDCLASSEX));
+
+	hCurrentInstance = hInstance;
 
 	wClass.cbSize = sizeof(WNDCLASSEX);
 	wClass.hbrBackground = (HBRUSH)(COLOR_WINDOW +1);
@@ -116,9 +126,39 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			switch (LOWORD(wParam))
 			{
+				case ID_HELP_ABOUT40014:
+				{	
+					DialogBox(hCurrentInstance, MAKEINTRESOURCE(IDD_DIALOG1), hwnd, About);
+					break;
+				}
 				case ID_FILE_PRINT:
 				{
 					currentId = ID_FILE_PRINT;
+
+					if (!PrintedArea)
+						break;
+					else
+						PrintedArea = TRUE;
+
+					OPENFILENAME openFileName;
+					char szFileName[MAX_PATH] = "";
+					ZeroMemory(&openFileName, sizeof(openFileName));
+
+					openFileName.lStructSize = sizeof(openFileName);
+					openFileName.hwndOwner = NULL;
+					openFileName.lpstrFilter = (LPCWSTR)L"EMF files (*.emf)\0*.emf";
+					openFileName.lpstrFile = (LPWSTR)szFileName;
+					openFileName.nMaxFile = MAX_PATH;
+					openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+					openFileName.lpstrDefExt = (LPCWSTR)L"emf";
+
+					if (GetSaveFileName(&openFileName) == TRUE)
+					{
+						hdc = GetDC(hwnd);
+
+						RECT rect;
+						GetClientRect(hwnd, &rect);
+					}
 
 					break;
 				}
@@ -198,55 +238,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				case ID_FILE_SAVE:
 				{
 					hdc = GetDC(hwnd);
-
-					RECT rect;
-					GetClientRect(hwnd, &rect);
-
-					/* Get meta data about current descriptor */
-
-					int iWidthMM = GetDeviceCaps(hdc, HORZSIZE);
-					int iHeightMM = GetDeviceCaps(hdc, VERTSIZE);
-					int iWidthPels = GetDeviceCaps(hdc, HORZRES);
-					int iHeightPels = GetDeviceCaps(hdc, VERTRES);
-					rect.left = (rect.left * iWidthMM * 100) / iWidthPels;
-					rect.top = (rect.top * iHeightMM * 100) / iHeightPels;
-					rect.right = (rect.right * iWidthMM * 100) / iWidthPels;
-					rect.bottom = (rect.bottom * iHeightMM * 100) / iHeightPels;
-
-					/* Create dialog for save file */
-
-					OPENFILENAME openFileName;
-					char szFileName[MAX_PATH] = "";
-					ZeroMemory(&openFileName, sizeof(openFileName));
-
-					openFileName.lStructSize = sizeof(openFileName);
-					openFileName.hwndOwner = NULL;
-					openFileName.lpstrFilter = (LPCWSTR)L"EMF files (*.emf)\0*.emf";
-					openFileName.lpstrFile = (LPWSTR)szFileName;
-					openFileName.nMaxFile = MAX_PATH;
-					openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-					openFileName.lpstrDefExt = (LPCWSTR)L"emf";
-
-					GetSaveFileName(&openFileName);
-
-					/* Close dialog for save file */
-
-					HDC hdcMeta = CreateEnhMetaFile(hdc, openFileName.lpstrFile, &rect, L"iPaint EMF file\0");
-
-					/* If file has been not created or saved */
-
-					if (!hdcMeta)
-						MessageBox(NULL, L"CreateEnhMetaFile!", L"Error", MB_ICONERROR);
-
-
-					StretchBlt(hdcMeta, 0, 0, GetDeviceCaps(hdc, HORZRES),
-						GetDeviceCaps(hdc, VERTRES), memDC, 0, 0,
-						GetDeviceCaps(memDC, HORZRES), GetDeviceCaps(memDC, VERTRES), SRCCOPY);
-
-					SetMapMode(hdcMeta, MM_ANISOTROPIC);
+					SaveFileDialog(hdc, memDC, hwnd);
 					ReleaseDC(hwnd, hdc);
-					HENHMETAFILE meta = CloseEnhMetaFile(hdcMeta);
-
 					break;
 				}
 
@@ -254,77 +247,15 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				{
 					hdc = GetDC(hwnd);
 
-					OPENFILENAME openFileName;
-					char szFileName[MAX_PATH] = "";
-					ZeroMemory(&openFileName, sizeof(openFileName));
-					openFileName.lStructSize = sizeof(openFileName);
-					openFileName.hwndOwner = NULL;
-					openFileName.lpstrFilter = (LPCWSTR)L"EMF files (*.emf)\0*.emf";
-					openFileName.lpstrFile = (LPWSTR)szFileName;
-					openFileName.nMaxFile = MAX_PATH;
-					openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-					openFileName.lpstrDefExt = (LPCWSTR)L"emf";
-
-					if (GetOpenFileName(&openFileName) == TRUE)
-					{
-						HENHMETAFILE henHMetaFile = GetEnhMetaFile(openFileName.lpstrFile);
-						RECT rect;
-						GetClientRect(hwnd, &rect);
-						PlayEnhMetaFile(hdc, henHMetaFile, &rect);
-
-						StretchBlt(memDC, 0, 0, GetDeviceCaps(hdc, HORZRES),
-							GetDeviceCaps(hdc, VERTRES), memDC, 0, 0,
-							GetDeviceCaps(memDC, HORZRES), GetDeviceCaps(memDC, VERTRES), SRCCOPY);
-
-						DeleteEnhMetaFile(henHMetaFile);
-					}
+					OpenFileDialog(hdc, memDC, hwnd);
 
 					break;
 				}
 				case ID_FILE_EXIT:
 				{
 					hdc = GetDC(hwnd);
-					
-					RECT rect;
-					GetClientRect(hwnd, &rect);
-					int iWidthMM = GetDeviceCaps(hdc, HORZSIZE);
-					int iHeightMM = GetDeviceCaps(hdc, VERTSIZE);
-					int iWidthPels = GetDeviceCaps(hdc, HORZRES);
-					int iHeightPels = GetDeviceCaps(hdc, VERTRES);
-					rect.left = (rect.left * iWidthMM * 100) / iWidthPels;
-					rect.top = (rect.top * iHeightMM * 100) / iHeightPels;
-					rect.right = (rect.right * iWidthMM * 100) / iWidthPels;
-					rect.bottom = (rect.bottom * iHeightMM * 100) / iHeightPels;
-
-					/* Create dialog for save file */
-
-					OPENFILENAME openFileName;
-					char szFileName[MAX_PATH] = "";
-					ZeroMemory(&openFileName, sizeof(openFileName));
-
-					openFileName.lStructSize = sizeof(openFileName);
-					openFileName.hwndOwner = NULL;
-					openFileName.lpstrFilter = (LPCWSTR)L"EMF files (*.emf)\0*.emf";
-					openFileName.lpstrFile = (LPWSTR)szFileName;
-					openFileName.nMaxFile = MAX_PATH;
-					openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
-					openFileName.lpstrDefExt = (LPCWSTR)L"emf";
-
-					GetSaveFileName(&openFileName);
-
-					/* Close dialog for save file */
-
-					HDC hdcMeta = CreateEnhMetaFile(hdc, openFileName.lpstrFile, &rect, L"iPaint EMF file\0");
-					if (!hdcMeta)
-					{
-						MessageBox(NULL, L"CreateEnhMetaFile!", L"Error", MB_ICONERROR);
-					}
-					StretchBlt(hdcMeta, 0, 0, GetDeviceCaps(hdc, HORZRES),
-						GetDeviceCaps(hdc, VERTRES), memDC, 0, 0,
-						GetDeviceCaps(memDC, HORZRES), GetDeviceCaps(memDC, VERTRES), SRCCOPY);
-					SetMapMode(hdcMeta, MM_ANISOTROPIC);
+					SaveFileDialog(hdc, memDC, hwnd);
 					ReleaseDC(hwnd, hdc);
-					HENHMETAFILE meta = CloseEnhMetaFile(hdcMeta);
 					break;
 				}
 				case ID_INSTRUMENT_PENCIL:
@@ -423,9 +354,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 					if (wParam & MK_LBUTTON)
 					{
 						hdc = GetDC(hwnd);
-						ptsEnd = MAKEPOINTS(lParam);
 
 						painter.PrintArea(hdc, memDC, ptsBegin, &ptsEnd, zoom, fPrevLine, lParam);
+						fPrevLine = TRUE;
+						ReleaseDC(hwnd, hdc);
 					}
 
 					break;
@@ -555,6 +487,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		{
 			hdc = GetDC(hwnd);
 			
+			if (currentId == ID_FILE_PRINT)
+			{
+				SendMessage(hwnd, WM_COMMAND, ID_FILE_PRINT, 0);
+			}
+
 			hPen = CreatePen(PS_SOLID, painter.PenSize, painter.CurrentColor);
 			SelectObject(memDC, hPen);
 			SetDCPenColor(memDC, painter.CurrentColor);
@@ -577,13 +514,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 			else if (currentId == ID_INSTRUMENT_RECTANGLE)
 			{
-				//SelectObject(memDC, GetStockObject(NULL_BRUSH));
 				ptsEnd = MAKEPOINTS(lParam);
 				Rectangle(memDC, ptsBegin.x/zoom, ptsBegin.y / zoom, ptsEnd.x / zoom, ptsEnd.y / zoom);
 			}
 			else if (currentId == ID_INSTRUMENT_ELLIPSE)
 			{
-				//SelectObject(memDC, GetStockObject(NULL_BRUSH));
 				ptsEnd = MAKEPOINTS(lParam);
 				Ellipse(memDC, ptsBegin.x / zoom, ptsBegin.y / zoom, ptsEnd.x / zoom, ptsEnd.y / zoom);
 			}
@@ -610,6 +545,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				LineTo(memDC, ptsEnd.x / zoom, ptsEnd.y / zoom);
 				ptsBegin = ptsEnd;
 			}
+
 			fPrevLine = FALSE;
 			ClipCursor(NULL);
 			ReleaseCapture();
@@ -620,7 +556,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case WM_PAINT:
 		{
 			hdc = GetDC(hwnd);
-			
+
 			if (currentId == ID_INSTRUMENT_TEXT)
 			{
 				TextOut(memDC, ptsBegin.x, ptsBegin.y, (LPCWSTR)text, sizeof(text));
@@ -673,6 +609,44 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 				text[0] = (char)wParam;
 				SendMessage(hwnd, WM_PAINT, 0, 0);
 			}
+			switch (wParam)
+			{
+				case 'X':
+				{
+					if (GetAsyncKeyState(VK_CONTROL))
+					{
+						hdc = GetDC(hwnd);
+						SaveFileDialog(hdc, memDC, hwnd);
+
+						DestroyWindow(hwnd);
+						break;
+					}
+
+					break;
+				}
+				case 'S':
+				{
+					if (GetAsyncKeyState(VK_CONTROL))
+					{
+						hdc = GetDC(hwnd);
+						SaveFileDialog(hdc, memDC, hwnd);
+						ReleaseDC(hwnd, hdc);
+						break;
+					}
+					break;
+				}
+				case 'O':
+				{
+					if (GetAsyncKeyState(VK_CONTROL))
+					{
+						hdc = GetDC(hwnd);
+						OpenFileDialog(hdc, memDC, hwnd);
+						ReleaseDC(hwnd, hdc);
+						break;
+					}
+					break;
+				}
+			}
 			break;
 		}
 
@@ -684,4 +658,129 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	}
 
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
+
+INT_PTR CALLBACK About(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+	UNREFERENCED_PARAMETER(lParam);
+
+	static HBITMAP hBmp;	
+	static HWND hPic;
+	static HBITMAP hBitmap;
+
+	switch (uMsg)
+	{
+	case WM_INITDIALOG:
+	{
+		hBitmap = (HBITMAP)LoadImage(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_PNG1),
+			IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION | LR_DEFAULTSIZE);
+
+		return (INT_PTR)TRUE;
+	}
+	case WM_PAINT:
+	{
+		HDC hdc;
+		RECT rect;
+		PAINTSTRUCT ps;
+		hdc = BeginPaint(hWnd, &ps);
+		GetClientRect(hWnd, &rect);
+
+		BITMAP bitmap = { 0 };
+		GetObject(hBitmap, sizeof(BITMAP), &bitmap);
+		HDC hMemDC = CreateCompatibleDC(hdc);
+		HBITMAP hBitmapOld = (HBITMAP)SelectObject(hMemDC, hBitmap);
+		StretchBlt(hdc, rect.left, rect.top, rect.right - rect.left,
+			rect.bottom - rect.top, hMemDC, 0, 0, bitmap.bmWidth, bitmap.bmHeight, SRCCOPY);
+		SelectObject(hMemDC, hBitmapOld);
+		DeleteDC(hMemDC);
+
+
+		EndPaint(hWnd, &ps);
+
+		break;
+	}
+	case WM_COMMAND:
+		switch (LOWORD(wParam))
+		{
+		default:
+		{
+			EndDialog(hWnd, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		}
+		break;
+	}
+
+	return (INT_PTR)FALSE;
+}
+
+void OpenFileDialog(HDC hdc, HDC memDC, HWND hwnd)
+{
+	OPENFILENAME openFileName;
+	char szFileName[MAX_PATH] = "";
+	ZeroMemory(&openFileName, sizeof(openFileName));
+	openFileName.lStructSize = sizeof(openFileName);
+	openFileName.hwndOwner = NULL;
+	openFileName.lpstrFilter = (LPCWSTR)L"EMF files (*.emf)\0*.emf";
+	openFileName.lpstrFile = (LPWSTR)szFileName;
+	openFileName.nMaxFile = MAX_PATH;
+	openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+	openFileName.lpstrDefExt = (LPCWSTR)L"emf";
+
+	if (GetOpenFileName(&openFileName) == TRUE)
+	{
+		HENHMETAFILE henHMetaFile = GetEnhMetaFile(openFileName.lpstrFile);
+		RECT rect;
+		GetClientRect(hwnd, &rect);
+		PlayEnhMetaFile(hdc, henHMetaFile, &rect);
+
+		StretchBlt(memDC, 0, 0, GetDeviceCaps(hdc, HORZRES),
+			GetDeviceCaps(hdc, VERTRES), memDC, 0, 0,
+			GetDeviceCaps(memDC, HORZRES), GetDeviceCaps(memDC, VERTRES), SRCCOPY);
+
+		DeleteEnhMetaFile(henHMetaFile);
+	}
+}
+
+void SaveFileDialog(HDC hdc, HDC memDC, HWND hwnd)
+{
+	RECT rect;
+	GetClientRect(hwnd, &rect);
+	int iWidthMM = GetDeviceCaps(hdc, HORZSIZE);
+	int iHeightMM = GetDeviceCaps(hdc, VERTSIZE);
+	int iWidthPels = GetDeviceCaps(hdc, HORZRES);
+	int iHeightPels = GetDeviceCaps(hdc, VERTRES);
+	rect.left = (rect.left * iWidthMM * 100) / iWidthPels;
+	rect.top = (rect.top * iHeightMM * 100) / iHeightPels;
+	rect.right = (rect.right * iWidthMM * 100) / iWidthPels;
+	rect.bottom = (rect.bottom * iHeightMM * 100) / iHeightPels;
+
+	/* Create dialog for save file */
+
+	OPENFILENAME openFileName;
+	char szFileName[MAX_PATH] = "";
+	ZeroMemory(&openFileName, sizeof(openFileName));
+
+	openFileName.lStructSize = sizeof(openFileName);
+	openFileName.hwndOwner = NULL;
+	openFileName.lpstrFilter = (LPCWSTR)L"EMF files (*.emf)\0*.emf";
+	openFileName.lpstrFile = (LPWSTR)szFileName;
+	openFileName.nMaxFile = MAX_PATH;
+	openFileName.Flags = OFN_EXPLORER | OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
+	openFileName.lpstrDefExt = (LPCWSTR)L"emf";
+
+	GetSaveFileName(&openFileName);
+
+	/* Close dialog for save file */
+
+	HDC hdcMeta = CreateEnhMetaFile(hdc, openFileName.lpstrFile, &rect, L"iPaint EMF file\0");
+	if (!hdcMeta)
+	{
+		MessageBox(NULL, L"CreateEnhMetaFile!", L"Error", MB_ICONERROR);
+	}
+	StretchBlt(hdcMeta, 0, 0, GetDeviceCaps(hdc, HORZRES),
+		GetDeviceCaps(hdc, VERTRES), memDC, 0, 0,
+		GetDeviceCaps(memDC, HORZRES), GetDeviceCaps(memDC, VERTRES), SRCCOPY);
+	SetMapMode(hdcMeta, MM_ANISOTROPIC);
+	HENHMETAFILE meta = CloseEnhMetaFile(hdcMeta);
 }

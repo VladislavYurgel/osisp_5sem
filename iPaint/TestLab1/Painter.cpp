@@ -65,6 +65,7 @@ void Painter::PrintArea(HDC hdc, HDC memDC, POINTS ptsBegin, POINTS *ptsEnd, dou
 {
 	if (fPrevLine)
 	{
+		SelectObject(hdc, GetStockObject(NULL_BRUSH));
 		SetROP2(hdc, R2_NOTXORPEN); //R2_NOTXORPEN
 		Rectangle(hdc, ptsBegin.x, ptsBegin.y, ptsEnd->x, ptsEnd->y);
 		StretchBlt(hdc, 0, 0, GetDeviceCaps(hdc, HORZRES)*zoom,
@@ -110,12 +111,10 @@ void Painter::drawRectangle(HDC hdc, HDC memDC, POINTS ptsBegin, POINTS *ptsEnd,
 {
 	if (fPrevLine)
 	{
-		SetROP2(hdc, R2_NOTXORPEN); //R2_NOTXORPEN
 		Rectangle(hdc, ptsBegin.x, ptsBegin.y, ptsEnd->x, ptsEnd->y);
 		StretchBlt(hdc, 0, 0, GetDeviceCaps(hdc, HORZRES)*zoom,
 			GetDeviceCaps(hdc, VERTRES)*zoom, memDC, 0, 0,
 			GetDeviceCaps(memDC, HORZRES), GetDeviceCaps(memDC, VERTRES), SRCCOPY);
-		SetROP2(hdc, R2_COPYPEN);
 
 	}
 	*ptsEnd = MAKEPOINTS(lParam);
