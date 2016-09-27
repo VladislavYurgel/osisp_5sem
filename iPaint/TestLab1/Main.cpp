@@ -176,11 +176,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 							abs(ptsEnd.x - ptsBegin.x), abs(ptsEnd.y - ptsBegin.y), SRCCOPY);
 
 						SetMapMode(hdcMeta, MM_ANISOTROPIC);
-						ReleaseDC(hwnd, hdc);
+						//ReleaseDC(hwnd, hdc);
 						HENHMETAFILE meta = CloseEnhMetaFile(hdcMeta);
 						DeleteEnhMetaFile(meta);
 
-						ReleaseDC(hwnd, painter.dcMemory);
+						StretchBlt(hdc, 0, 0, GetDeviceCaps(hdc, HORZRES),
+							GetDeviceCaps(hdc, VERTRES), painter.dcMemory, 0, 0,
+							GetDeviceCaps(hdc, HORZRES), GetDeviceCaps(hdc, VERTRES), SRCCOPY);
+
+						ReleaseDC(hwnd, hdc);
+
+						//ReleaseDC(hwnd, painter.dcMemory);
 						currentId = 0;
 						PrintedArea = FALSE;
 					}
@@ -605,7 +611,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						painter.HideScrollBars(hwnd);
 					else
 					{
-						painter.ScrollBarSetParams(hwnd, zoom);
+						//painter.ScrollBarSetParams(hwnd, zoom);
 						painter.ShowScrollBars(hwnd);
 					}
 					SendMessage(hwnd, WM_PAINT, 0, 0);
@@ -617,7 +623,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						painter.HideScrollBars(hwnd);
 					else
 					{
-						painter.ShowScrollBars(hwnd);
+						//painter.ShowScrollBars(hwnd);
 						painter.ScrollBarSetParams(hwnd, zoom);
 					}
 
@@ -670,6 +676,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 						break;
 					}
 					break;
+				}
+				case 'P':
+				{
+					if (GetAsyncKeyState(VK_CONTROL))
+					{
+						hdc = GetDC(hwnd);
+						SendMessage(hwnd, WM_COMMAND, ID_FILE_PRINT, 0);
+						ReleaseDC(hwnd, hdc);
+						break;
+					}
 				}
 			}
 			break;

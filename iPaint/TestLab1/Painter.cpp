@@ -38,6 +38,22 @@ void Painter::ShowScrollBars(HWND hWnd)
 
 void Painter::ScrollBarSetParams(HWND hWnd, double zoom)
 {
+	int pageSizeX, pageSizeY;
+	int xMaxScroll, yMaxScroll;
+
+	HDC hDc = GetDC(hWnd);
+
+	if (zoom == 1)
+	{
+		pageSizeX = GetDeviceCaps(hDc, HORZRES);
+		pageSizeY = GetDeviceCaps(hDc, VERTRES);
+	}
+	else
+	{
+		pageSizeX = GetDeviceCaps(hDc, HORZRES);
+		pageSizeY = GetDeviceCaps(hDc, VERTRES);
+	}
+
 	SCROLLINFO scrollInfo;
 	scrollInfo.cbSize = sizeof(SCROLLINFO);
 	scrollInfo.fMask = SIF_ALL;
@@ -126,7 +142,7 @@ void Painter::drawEllipse(HDC hdc, HDC memDC, POINTS ptsBegin, POINTS *ptsEnd, d
 {
 	if (fPrevLine)
 	{
-		SetROP2(hdc, R2_NOTXORPEN); //R2_NOTXORPEN
+		SetROP2(hdc, R2_NOTXORPEN);
 
 		Ellipse(hdc, ptsBegin.x, ptsBegin.y, ptsEnd->x, ptsEnd->y);
 		StretchBlt(hdc, 0, 0, GetDeviceCaps(hdc, HORZRES)*zoom,
@@ -144,7 +160,7 @@ void Painter::drawCurve(HDC hdc, HDC memDC, POINTS ptsBegin, POINTS *ptsEnd, dou
 {
 	if (fPrevLine)
 	{
-		SetROP2(hdc, R2_NOTXORPEN); //R2_NOTXORPEN
+		SetROP2(hdc, R2_NOTXORPEN);
 		MoveToEx(hdc, ptsBegin.x, ptsBegin.y, (LPPOINT)NULL);
 		LineTo(hdc, ptsEnd->x, ptsEnd->y);
 		StretchBlt(hdc, 0, 0, GetDeviceCaps(hdc, HORZRES)*zoom,
