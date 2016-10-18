@@ -1,0 +1,19 @@
+[Tue Oct 18 07:30:06 2016] Successful! Inzialized 3 threads
+[Tue Oct 18 07:30:06 2016] Thread with id 0 was "locked"
+[Tue Oct 18 07:30:06 2016] Thread with id 0 has been started execute method "Test method"
+[Tue Oct 18 07:30:06 2016] Thread with id 1 was "locked"
+[Tue Oct 18 07:30:06 2016] Thread with id 1 has been started execute method "Second test method"
+[Tue Oct 18 07:30:06 2016] Thread with id 2 was "locked"
+[Tue Oct 18 07:30:06 2016] Thread with id 2 has been started execute method "Second test method"
+[Tue Oct 18 07:30:06 2016] All threads is busy, wait...
+[Tue Oct 18 07:30:08 2016] Thread with id 0 has been ended execute method "Test method"
+[Tue Oct 18 07:30:08 2016] Thread with id 0 was "freed"
+[Tue Oct 18 07:30:08 2016] Thread with id 0 was "locked"
+[Tue Oct 18 07:30:08 2016] Thread with id 0 has been started execute method "Second test method"
+[Tue Oct 18 07:30:09 2016] Thread with id 1 has been ended execute method "Second test method"
+[Tue Oct 18 07:30:09 2016] Thread with id 2 has been ended execute method "Second test method"
+[Tue Oct 18 07:30:09 2016] Thread with id 1 was "freed"
+[Tue Oct 18 07:30:09 2016] Thread with id 2 was "freed"
+[Tue Oct 18 07:30:11 2016] Thread with id 0 has been ended execute method "Second test method"
+[Tue Oct 18 07:30:11 2016] Thread with id 0 was "freed"
+[Tue Oct 18 07:30:11 2016] Successful! All threads are destroyed!
